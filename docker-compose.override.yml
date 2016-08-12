@@ -1,0 +1,8 @@
+version: '2'
+services:
+  collector:
+      image: icox/symfony:php7-dev
+      volumes:
+        - .:/var/www
+  mongo:
+      image: mongo

@@ -1,0 +1,6 @@
+version: '2'
+services:
+  collector:
+      image: icox/uci-collector
+  mongo:
+      image: mongo

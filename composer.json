@@ -1,0 +1,20 @@
+{
+    "name": "icox/collector",
+    "description": "United States Company Collector",
+    "authors": [
+        {
+            "name": "Yasmany Cubela Medina",
+            "email": "yasmanycm@gmail.com"
+        }
+    ],
+    "require": {
+        "symfony/console": "^3.1",
+        "touki/ftp": "^1.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "": "",
+            "Collector\\": "../Collector/"
+        }
+    }
+}
