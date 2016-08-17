@@ -9,8 +9,8 @@ RUN         apt-get update && apt-get dist-upgrade -y
 RUN         apt-get install -y apt-utils
 RUN         apt-get install -y htop nano curl git zip unzip
 RUN         apt-get install -y nginx php7.0-common php7.0-cli php7.0-fpm php7.0-mcrypt php7.0-gd \
-            php7.0-curl php7.0-intl php7.0-mysql php7.0-xml php7.0-mbstring php7.0-dev php-pear \
-            libcurl4-openssl-dev pkg-config libssl-dev libsslcommon2-dev wkhtmltopdf xvfb
+            php7.0-curl php7.0-intl php7.0-mysql php7.0-xml php7.0-mbstring php7.0-dev php7.0-zip
+            php-pear libcurl4-openssl-dev pkg-config libssl-dev libsslcommon2-dev wkhtmltopdf xvfb
 RUN         pecl install mongodb
 RUN         echo "extension=mongodb.so" >> /etc/php/7.0/mods-available/mongodb.ini
 RUN         phpenmod mongodb

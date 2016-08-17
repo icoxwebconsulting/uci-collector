@@ -7,6 +7,14 @@ class Collector
     public function run()
     {
         $edgar = new EDGAR();
-        print_r($edgar->getJSON('index.json', 'edgar/full-index'));
+        $years = $edgar->listDirs('/edgar/full-index');
+        foreach ($years as $year) {
+            $quarters = $edgar->listDirs($year);
+            foreach ($quarters as $quarter) {
+                $data = $edgar->getZipContent('company', $quarter);
+                print_r($data);
+                die();
+            }
+        }
     }
 }
