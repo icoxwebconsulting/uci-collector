@@ -2,16 +2,18 @@
 
 namespace Collector;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Request;
 use Touki\FTP\Connection\AnonymousConnection;
+use Touki\FTP\FTP;
 use Touki\FTP\FTPFactory;
 use Touki\FTP\Model\Directory;
 
 class EDGAR
 {
-    /**
-     * @var string
-     */
-    const HOST = 'ftp.sec.gov';
+    const FTP_HOST = 'ftp.sec.gov';
+    const ARCHIVE_HOST = 'https://www.sec.gov';
+    const HEADER_REGEX = '/<([A-Z\\-\\/0-9]+)>([\\w.\\-: ]*)/mi';
 
     /**
      * @var string
@@ -19,18 +21,36 @@ class EDGAR
     private $downloadDirectory = 'download';
 
     /**
-     * @var
+     * @var FTP
      */
     private $ftp;
 
     /**
-     * EDGAR constructor.
+     * @var Client
      */
-    public function __construct()
+    private $guzzle;
+
+    /**
+     * Init FTP
+     */
+    private function initFTP()
     {
-        $connection = new AnonymousConnection(EDGAR::HOST, $port = 21, $timeout = 900, $passive = true);
+        $connection = new AnonymousConnection(EDGAR::FTP_HOST, $port = 21, $timeout = 900, $passive = true);
         $factory = new FTPFactory();
         $this->ftp = $factory->build($connection);
+    }
+
+    /**
+     * Init Guzzle
+     */
+    private function initGuzzle()
+    {
+        $this->guzzle = new Client([
+            // Base URI is used with relative requests
+            'base_uri' => EDGAR::ARCHIVE_HOST,
+            // You can set any number of default request options.
+            'timeout' => 10,
+        ]);
     }
 
     /**
@@ -41,6 +61,10 @@ class EDGAR
      */
     public function listDirs(string $directory):array
     {
+        if (!$this->ftp) {
+            $this->initFTP();
+        }
+
         $list = $this->ftp->findFilesystems(new Directory($directory));
         return array_reduce($list, function ($carry, $current) {
             if ($current instanceof Directory) {
@@ -206,6 +230,10 @@ class EDGAR
      */
     public function getZipContent(string $fileName, string $inDirectory = '/'):array
     {
+        if (!$this->ftp) {
+            $this->initFTP();
+        }
+
         try {
             $zipFileName = sprintf('%s.%s', $fileName, 'zip');
             $this->get($zipFileName, $inDirectory);
@@ -223,5 +251,81 @@ class EDGAR
         } catch (\Exception $exception) {
             return array();
         }
+    }
+
+    /**
+     * @param string $fileName
+     * @return string
+     */
+    private function buildArchiveURL(string $fileName):string
+    {
+        $fileName = substr($fileName, 0, strpos($fileName, '.txt'));
+        $sections = explode('/', $fileName);
+        $path = sprintf('%s/%s/%s', $sections[2], implode('', explode('-', $sections[3])), $sections[3]);
+        return sprintf('%s/Archives/edgar/data/%s.hdr.sgml', EDGAR::ARCHIVE_HOST, $path);
+    }
+
+    /**
+     * @param string $raw
+     * @return array
+     */
+    private function parseHeader(string $raw):array
+    {
+        // split info
+        $matches = array();
+        preg_match_all(EDGAR::HEADER_REGEX, $raw, $matches);
+        $tags = $matches[1];
+        $content = $matches[2];
+        // join them
+        $join = array();
+        foreach ($tags as $index => $tag) {
+            $join[$tag] = $content[$index];
+        }
+        // create tree, assume non having close tag to be self closing
+        $tree = [];
+        foreach ($join as $tag => $content) {
+            // on closing tag
+            if (strpos($tag, '/') === 0) {
+                if (count($tree) > 1) {
+                    $inner = array_pop($tree);
+                    $containerKey = array_keys($tree[count($tree) - 1])[0];
+                    $container = array_pop($tree)[$containerKey];
+                    foreach ($inner as $key => $item) {
+                        $container[$key] = $item;
+                    }
+                    $tree[][$containerKey] = $container;
+                }
+
+                // do not include closing tags
+                continue;
+            }
+
+            // if has closing tag create subtree
+            if (array_key_exists(sprintf('/%s', $tag), $join)) {
+                $tree[] = array($tag => array());
+                continue;
+            }
+
+            $tree[count($tree) - 1][array_keys($tree[count($tree) - 1])[0]][$tag] = $content;
+        }
+        return $tree[0];
+    }
+
+    /**
+     * Get header of file from archive
+     *
+     * @param string $fileName
+     * @return array
+     */
+    public function getHeader(string $fileName):array
+    {
+        if (!$this->guzzle) {
+            $this->initGuzzle();
+        }
+
+        $url = $this->buildArchiveURL($fileName);
+        $request = new Request('GET', $url);
+        $response = $this->guzzle->send($request);
+        return $this->parseHeader($response->getBody()->getContents());
     }
 }

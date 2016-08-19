@@ -12,7 +12,9 @@ class Collector
             $quarters = $edgar->listDirs($year);
             foreach ($quarters as $quarter) {
                 $data = $edgar->getZipContent('company', $quarter);
-                print_r($data);
+                foreach ($data['content'] as $item) {
+                    print_r($edgar->getHeader($item['fileName']));
+                }
                 die();
             }
         }
