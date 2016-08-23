@@ -2,8 +2,30 @@
 
 namespace Collector;
 
-class Collector
+use Doctrine\ODM\MongoDB\DocumentManager;
+
+/**
+ * Class CompanyCollector
+ *
+ * @package Collector
+ */
+class CompanyCollector
 {
+    /**
+     * @var DocumentManager
+     */
+    private $dm;
+
+    /**
+     * CompanyCollector constructor.
+     *
+     * @param DocumentManager $dm
+     */
+    public function __construct(DocumentManager $dm)
+    {
+        $this->dm = $dm;
+    }
+
     public function run()
     {
         $edgar = new EDGAR();

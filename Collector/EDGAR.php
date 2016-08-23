@@ -4,6 +4,7 @@ namespace Collector;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
+use Symfony\Component\DomCrawler\Crawler;
 use Touki\FTP\Connection\AnonymousConnection;
 use Touki\FTP\FTP;
 use Touki\FTP\FTPFactory;
@@ -12,7 +13,7 @@ use Touki\FTP\Model\Directory;
 class EDGAR
 {
     const FTP_HOST = 'ftp.sec.gov';
-    const ARCHIVE_HOST = 'https://www.sec.gov';
+    const SEC_HOST = 'https://www.sec.gov';
     const HEADER_REGEX = '/<([A-Z\\-\\/0-9]+)>([\\w.\\-: ]*)/mi';
 
     /**
@@ -47,7 +48,7 @@ class EDGAR
     {
         $this->guzzle = new Client([
             // Base URI is used with relative requests
-            'base_uri' => EDGAR::ARCHIVE_HOST,
+            'base_uri' => EDGAR::SEC_HOST,
             // You can set any number of default request options.
             'timeout' => 10,
         ]);
@@ -262,7 +263,7 @@ class EDGAR
         $fileName = substr($fileName, 0, strpos($fileName, '.txt'));
         $sections = explode('/', $fileName);
         $path = sprintf('%s/%s/%s', $sections[2], implode('', explode('-', $sections[3])), $sections[3]);
-        return sprintf('%s/Archives/edgar/data/%s.hdr.sgml', EDGAR::ARCHIVE_HOST, $path);
+        return sprintf('%s/Archives/edgar/data/%s.hdr.sgml', EDGAR::SEC_HOST, $path);
     }
 
     /**
@@ -327,5 +328,55 @@ class EDGAR
         $request = new Request('GET', $url);
         $response = $this->guzzle->send($request);
         return $this->parseHeader($response->getBody()->getContents());
+    }
+
+    /**
+     * @return array
+     */
+    public function getSICCodes():array
+    {
+        if (!$this->guzzle) {
+            $this->initGuzzle();
+        }
+
+        $request = new Request('GET', 'info/edgar/siccodes.htm');
+        $response = $this->guzzle->send($request);
+        $html = $response->getBody()->getContents();
+        $crawler = new Crawler($html);
+        $crawler = $crawler->filterXPath('//body/table[2]/tr/td[3]/font/table/tr');
+
+        $sicCodes = array();
+
+        foreach ($crawler as $tr) {
+            $index = 0;
+            $item = array();
+            foreach ($tr->childNodes as $td) {
+                if ($td->nodeName === 'td' &&
+                    !in_array(ord($td->nodeValue), array(10, 194))
+                ) {
+                    $content = $td->nodeValue;
+                    switch ($index) {
+                        case 0: {
+                            $item['code'] = $content;
+                            break;
+                        }
+                        case 1: {
+                            $item['office'] = $content;
+                            break;
+                        }
+                        case 2: {
+                            $item['title'] = $content;
+                            break;
+                        }
+                    }
+                    $index++;
+                }
+            }
+
+            if (!empty($item)) {
+                $sicCodes[] = $item;
+            }
+        }
+        return array_slice($sicCodes, 3, count($sicCodes) - 4);
     }
 }
