@@ -37,6 +37,7 @@ class CompanyCollector
     public function run()
     {
         $this->logger->info('Starting Process');
+        $this->logger->info('Collecting SICs from DB');
         $sics = $this->dm->getRepository('Collector\SIC')->findAll();
         $availableSICS = array_reduce(
             $sics,
@@ -49,32 +50,47 @@ class CompanyCollector
         );
 
         $edgar = new EDGAR();
+        $this->logger->info('Collecting full index');
         $years = $edgar->listDirs('/edgar/full-index');
+        $this->logger->info(sprintf('Full index has %s years', count($years)));
         $i = 0;
         foreach ($years as $year) {
+            $this->logger->info(sprintf('Collecting Quarters for %s year', $year));
             $quarters = $edgar->listDirs($year);
+            $this->logger->info(sprintf('Year %s has %s quarters', $year, count($quarters)));
             foreach ($quarters as $quarter) {
+                $this->logger->info(sprintf('Collecting company zip for quarter %s', $quarter));
                 $data = $edgar->getZipContent('company', $quarter);
-                foreach ($data['content'] as $item) {
-                    $data = $edgar->getHeader($item['fileName']);
+                $items = $data['content'];
+                $this->logger->info(sprintf('Quarter %s has %s company files', $quarter, count($items)));
+                foreach ($items as $item) {
+                    $fileName = $item['fileName'];
+                    $this->logger->info(sprintf('Collecting header file for %s', $fileName));
+                    $data = $edgar->getHeader($fileName);
                     $company = Company::buildFromArray($data, $availableSICS);
                     if ($company) {
-                        echo 'saving company'.$company->getConformedName().PHP_EOL;
+                        $this->logger->info(
+                            sprintf(
+                                'Header file for %s contains valid company %s data',
+                                $fileName,
+                                $company->getConformedName()
+                            )
+                        );
                         $this->dm->persist($company);
                     } else {
-                        echo 'skipping company'.PHP_EOL;
+                        $this->logger->info(
+                            sprintf('Header file for %s does not contains a valid company data', $fileName)
+                        );
                     }
                 }
-            }
-            $i++;
-            echo $i.PHP_EOL;
-            if ($i > 9) {
+                $this->logger->info(sprintf('Saving companies for quarter %s', $quarter));
                 $this->dm->flush();
-                echo 'done'.PHP_EOL;
-                die();
+                $i++;
+                if ($i > 3) {
+                    die();
+                }
             }
         }
-        $this->dm->flush();
         $this->logger->info('Process End');
     }
 }

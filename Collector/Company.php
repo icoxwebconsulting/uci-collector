@@ -87,10 +87,13 @@ class Company
                 ) ? $data['BUSINESS-ADDRESS'] : array();
                 $mailAddressData = array_key_exists('MAIL-ADDRESS', $data) ? $data['MAIL-ADDRESS'] : array();
             } elseif (array_key_exists('ISSUER', $data)) {
+                // split inner owner data if exist
                 $ownerRawData = array();
                 if (array_key_exists('REPORTING-OWNER', $data)) {
                     $ownerRawData = $data['REPORTING-OWNER'];
                 }
+
+                // company data
                 $data = $data['ISSUER'];
                 $companyData = array_key_exists('COMPANY-DATA', $data) ? $data['COMPANY-DATA'] : array();
                 $businessAddressData = array_key_exists(
@@ -98,6 +101,8 @@ class Company
                     $data
                 ) ? $data['BUSINESS-ADDRESS'] : array();
                 $mailAddressData = array_key_exists('MAIL-ADDRESS', $data) ? $data['MAIL-ADDRESS'] : array();
+
+                // owner data
                 $ownerData = array_key_exists(
                     'REPORTING-OWNER',
                     $ownerRawData
@@ -108,12 +113,19 @@ class Company
                 ) ? $ownerRawData['MAIL-ADDRESS'] : array();
             }
 
-            $sic = array_key_exists('ASSIGNED-SIC', $companyData) ? $availableSICS[$companyData['ASSIGNED-SIC']] : null;
-            $businessAddress = Address::buildFromArray($businessAddressData);
-            $mailAddress = Address::buildFromArray($mailAddressData);
-            $owner = Owner::buildFromArray($ownerData, $ownerAddressData);
+            // validate mandatory data
+            if (!empty($companyData['CIK']) &&
+                !empty($companyData['ASSIGNED-SIC']) &&
+                (!empty($businessAddressData) || !empty($mailAddressData))
+            ) {
+                $sic = array_key_exists(
+                    'ASSIGNED-SIC',
+                    $companyData
+                ) ? $availableSICS[$companyData['ASSIGNED-SIC']] : null;
+                $businessAddress = Address::buildFromArray($businessAddressData);
+                $mailAddress = Address::buildFromArray($mailAddressData);
+                $owner = Owner::buildFromArray($ownerData, $ownerAddressData);
 
-            try {
                 $company = new Company(
                     array_key_exists('CIK', $companyData) ? $companyData['CIK'] : null,
                     array_key_exists('CONFORMED-NAME', $companyData) ? $companyData['CONFORMED-NAME'] : null,
@@ -128,11 +140,9 @@ class Company
                     $mailAddress,
                     $owner
                 );
-            } catch (\TypeError $error) {
-                return null;
-            }
 
-            return $company;
+                return $company;
+            }
         }
     }
 
@@ -150,9 +160,9 @@ class Company
      * @param Owner $owner
      */
     public function __construct(
-        string $cik = null,
-        string $conformedName = null,
-        SIC $assignedSIC = null,
+        string $cik,
+        string $conformedName,
+        SIC $assignedSIC,
         string $irsNumber = null,
         string $stateOfIncorporation = null,
         string $fiscalEndYear = null,
