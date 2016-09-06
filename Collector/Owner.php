@@ -32,7 +32,7 @@ class Owner
      * @param $ownerAddressData
      * @return Owner
      */
-    static public function buildFromArray($ownerData, $ownerAddressData):Owner
+    static public function createFromArray($ownerData, $ownerAddressData):Owner
     {
         $street1 = array_key_exists('STREET1', $ownerAddressData) ? $ownerAddressData['STREET1'] : null;
         $street2 = array_key_exists('STREET2', $ownerAddressData) ? $ownerAddressData['STREET1'] : null;

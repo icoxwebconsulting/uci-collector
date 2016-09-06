@@ -3,6 +3,7 @@
 namespace Collector;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\Request;
 use Symfony\Component\DomCrawler\Crawler;
 use Touki\FTP\Connection\AnonymousConnection;
@@ -46,12 +47,14 @@ class EDGAR
      */
     private function initGuzzle()
     {
-        $this->guzzle = new Client([
-            // Base URI is used with relative requests
-            'base_uri' => EDGAR::SEC_HOST,
-            // You can set any number of default request options.
-            'timeout' => 10,
-        ]);
+        $this->guzzle = new Client(
+            [
+                // Base URI is used with relative requests
+                'base_uri' => EDGAR::SEC_HOST,
+                // You can set any number of default request options.
+                'timeout' => 10,
+            ]
+        );
     }
 
     /**
@@ -67,12 +70,18 @@ class EDGAR
         }
 
         $list = $this->ftp->findFilesystems(new Directory($directory));
-        return array_reduce($list, function ($carry, $current) {
-            if ($current instanceof Directory) {
-                $carry[] = $current->getRealpath();
-            }
-            return $carry;
-        }, array());
+
+        return array_reduce(
+            $list,
+            function ($carry, $current) {
+                if ($current instanceof Directory) {
+                    $carry[] = $current->getRealpath();
+                }
+
+                return $carry;
+            },
+            array()
+        );
     }
 
     /**
@@ -135,6 +144,7 @@ class EDGAR
                 }
             }
             fclose($handle);
+
             return $content;
         } else {
             throw new \Exception(sprintf('Error reading file %s', $fileFullName));
@@ -154,6 +164,7 @@ class EDGAR
                 $meta[trim($data[0])] = trim($data[1]);
             }
         }
+
         return $meta;
     }
 
@@ -172,7 +183,7 @@ class EDGAR
                 'formType' => array(),
                 'cik' => array(),
                 'dateFiled' => array(),
-                'fileName' => array()
+                'fileName' => array(),
             );
             $index = 0;
             foreach ($companyUnformattedData as $value) {
@@ -204,6 +215,7 @@ class EDGAR
             }
             $data[] = $companyParsedData;
         }
+
         return $data;
     }
 
@@ -218,6 +230,7 @@ class EDGAR
         $content['meta'] = $this->parseIDXMeta($fileContent);
         $fileContent = array_slice($fileContent, count($content['meta']));
         $content['content'] = $this->parseIDXData($fileContent);
+
         return $content;
     }
 
@@ -240,7 +253,7 @@ class EDGAR
             $this->get($zipFileName, $inDirectory);
             $zip = new \ZipArchive();
             $resource = $zip->open(sprintf('%s/%s', $this->downloadDirectory, $zipFileName));
-            if ($resource === TRUE) {
+            if ($resource === true) {
                 $zip->extractTo($this->downloadDirectory);
                 $zip->close();
             } else {
@@ -248,6 +261,7 @@ class EDGAR
             }
             $content = $this->parseIDX($fileName);
             $this->cleanUpDirectory($this->downloadDirectory);
+
             return $content;
         } catch (\Exception $exception) {
             return array();
@@ -263,6 +277,7 @@ class EDGAR
         $fileName = substr($fileName, 0, strpos($fileName, '.txt'));
         $sections = explode('/', $fileName);
         $path = sprintf('%s/%s/%s', $sections[2], implode('', explode('-', $sections[3])), $sections[3]);
+
         return sprintf('%s/Archives/edgar/data/%s.hdr.sgml', EDGAR::SEC_HOST, $path);
     }
 
@@ -309,6 +324,7 @@ class EDGAR
 
             $tree[count($tree) - 1][array_keys($tree[count($tree) - 1])[0]][$tag] = $content;
         }
+
         return $tree[0];
     }
 
@@ -316,18 +332,29 @@ class EDGAR
      * Get header of file from archive
      *
      * @param string $fileName
+     * @param int $iteration
      * @return array
      */
-    public function getHeader(string $fileName):array
+    public function getHeader(string $fileName, int $iteration = 0):array
     {
         if (!$this->guzzle) {
             $this->initGuzzle();
         }
 
-        $url = $this->buildArchiveURL($fileName);
-        $request = new Request('GET', $url);
-        $response = $this->guzzle->send($request);
-        return $this->parseHeader($response->getBody()->getContents());
+        try {
+            $url = $this->buildArchiveURL($fileName);
+            $request = new Request('GET', $url);
+            $response = $this->guzzle->send($request);
+
+            return $this->parseHeader($response->getBody()->getContents());
+        } catch (ConnectException $exception) {
+            // retry 5 times
+            if ($iteration < 5) {
+                return $this->getHeader($fileName, ++$iteration);
+            } else {
+                return array();
+            }
+        }
     }
 
     /**
@@ -377,6 +404,7 @@ class EDGAR
                 $sicCodes[] = $item;
             }
         }
+
         return array_slice($sicCodes, 3, count($sicCodes) - 4);
     }
 }

@@ -63,11 +63,28 @@ class Company
     private $assignedSIC;
 
     /**
+     * @param Company $company
      * @param array $data
-     * @param array $availableSICS
+     * @param array $availableSICs
+     */
+    static public function updateFromArray(Company $company, array $data, array $availableSICs)
+    {
+        $newCompany = self::createFromArray($data, $availableSICs);
+        $company->setAssignedSIC($newCompany->getAssignedSIC());
+        $company->setConformedName($newCompany->getConformedName());
+        $company->setIRSNumber($newCompany->getIRSNumber());
+        $company->setFiscalEndYear($newCompany->getFiscalEndYear());
+        $company->setBusinessAddress($newCompany->getBusinessAddress());
+        $company->setMailAddress($newCompany->getMailAddress());
+        $company->setOwner($newCompany->getOwner());
+    }
+
+    /**
+     * @param array $data
+     * @param array $availableSICs
      * @return Company|null
      */
-    static public function buildFromArray(array $data, array $availableSICS)
+    static public function createFromArray(array $data, array $availableSICs)
     {
         $companyData = array();
         $businessAddressData = array();
@@ -113,18 +130,17 @@ class Company
                 ) ? $ownerRawData['MAIL-ADDRESS'] : array();
             }
 
-            // validate mandatory data
-            if (!empty($companyData['CIK']) &&
-                !empty($companyData['ASSIGNED-SIC']) &&
+            if (!empty($companyData) &&
+                (array_key_exists('CIK', $companyData) && $companyData['CIK']) &&
+                (array_key_exists('ASSIGNED-SIC', $companyData) &&
+                    $companyData['ASSIGNED-SIC'] &&
+                    $availableSICs[$companyData['ASSIGNED-SIC']]) &&
                 (!empty($businessAddressData) || !empty($mailAddressData))
             ) {
-                $sic = array_key_exists(
-                    'ASSIGNED-SIC',
-                    $companyData
-                ) ? $availableSICS[$companyData['ASSIGNED-SIC']] : null;
-                $businessAddress = Address::buildFromArray($businessAddressData);
-                $mailAddress = Address::buildFromArray($mailAddressData);
-                $owner = Owner::buildFromArray($ownerData, $ownerAddressData);
+                $sic = $availableSICs[$companyData['ASSIGNED-SIC']];
+                $businessAddress = Address::createFromArray($businessAddressData);
+                $mailAddress = Address::createFromArray($mailAddressData);
+                $owner = Owner::createFromArray($ownerData, $ownerAddressData);
 
                 $company = new Company(
                     array_key_exists('CIK', $companyData) ? $companyData['CIK'] : null,
@@ -172,6 +188,7 @@ class Company
     ) {
         $this->cik = $cik;
         $this->conformedName = $conformedName;
+        $this->assignedSIC = $assignedSIC;
         $this->irsNumber = $irsNumber;
         $this->stateOfIncorporation = $stateOfIncorporation;
         $this->fiscalEndYear = $fiscalEndYear;
@@ -258,5 +275,69 @@ class Company
     public function getAssignedSIC()
     {
         return $this->assignedSIC;
+    }
+
+    /**
+     * @param string $conformedName
+     */
+    public function setConformedName(string $conformedName)
+    {
+        $this->conformedName = $conformedName;
+    }
+
+    /**
+     * @param string $irsNumber
+     */
+    public function setIRSNumber(string $irsNumber)
+    {
+        $this->irsNumber = $irsNumber;
+    }
+
+    /**
+     * @param string $stateOfIncorporation
+     */
+    public function setStateOfIncorporation(string $stateOfIncorporation)
+    {
+        $this->stateOfIncorporation = $stateOfIncorporation;
+    }
+
+    /**
+     * @param string $fiscalEndYear
+     */
+    public function setFiscalEndYear(string $fiscalEndYear)
+    {
+        $this->fiscalEndYear = $fiscalEndYear;
+    }
+
+    /**
+     * @param Address $businessAddress
+     */
+    public function setBusinessAddress(Address $businessAddress)
+    {
+        $this->businessAddress = $businessAddress;
+    }
+
+    /**
+     * @param Address $mailAddress
+     */
+    public function setMailAddress(Address $mailAddress)
+    {
+        $this->mailAddress = $mailAddress;
+    }
+
+    /**
+     * @param Owner $owner
+     */
+    public function setOwner(Owner $owner)
+    {
+        $this->owner = $owner;
+    }
+
+    /**
+     * @param SIC $assignedSIC
+     */
+    public function setAssignedSIC(SIC $assignedSIC)
+    {
+        $this->assignedSIC = $assignedSIC;
     }
 }

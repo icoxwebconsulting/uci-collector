@@ -67,7 +67,7 @@ class CompanyCollector
                     $fileName = $item['fileName'];
                     $this->logger->info(sprintf('Collecting header file for %s', $fileName));
                     $data = $edgar->getHeader($fileName);
-                    $company = Company::buildFromArray($data, $availableSICS);
+                    $company = Company::createFromArray($data, $availableSICS);
                     if ($company) {
                         $this->logger->info(
                             sprintf(
@@ -76,7 +76,26 @@ class CompanyCollector
                                 $company->getConformedName()
                             )
                         );
-                        $this->dm->persist($company);
+
+                        $this->logger->info(
+                            sprintf('Find if company %s already exist in UCI db', $company->getConformedName())
+                        );
+                        $existingCompany = $this->dm->getRepository('Collector\Company')->findOneBy(
+                            array('cik' => $company->getCIK())
+                        );
+
+                        if ($existingCompany) {
+                            $this->logger->info(
+                                sprintf(
+                                    'Company %s already exist in UCI db with id %s',
+                                    $company->getConformedName(),
+                                    $existingCompany->getId()
+                                )
+                            );
+                            Company::updateFromArray($existingCompany, $data, $availableSICS);
+                        } else {
+                            $this->dm->persist($company);
+                        }
                     } else {
                         $this->logger->info(
                             sprintf('Header file for %s does not contains a valid company data', $fileName)
@@ -85,10 +104,10 @@ class CompanyCollector
                 }
                 $this->logger->info(sprintf('Saving companies for quarter %s', $quarter));
                 $this->dm->flush();
-                $i++;
-                if ($i > 3) {
-                    die();
-                }
+            }
+            $i++;
+            if ($i > 3) {
+                die();
             }
         }
         $this->logger->info('Process End');

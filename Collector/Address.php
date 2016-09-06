@@ -46,7 +46,7 @@ class Address
      * @param array $data
      * @return Address
      */
-    static public function buildFromArray(array $data):Address
+    static public function createFromArray(array $data):Address
     {
         $street1 = array_key_exists('STREET1', $data) ? $data['STREET1'] : null;
         $street2 = array_key_exists('STREET2', $data) ? $data['STREET2'] : null;
