@@ -3,6 +3,7 @@
 namespace Collector;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Monolog\Logger;
 
 /**
  * Class SICCollector
@@ -17,17 +18,25 @@ class SICCollector
     private $dm;
 
     /**
+     * @var Logger
+     */
+    private $logger;
+
+    /**
      * SICCollector constructor.
      *
      * @param DocumentManager $dm
+     * @param Logger $logger
      */
-    public function __construct(DocumentManager $dm)
+    public function __construct(DocumentManager $dm, Logger $logger)
     {
         $this->dm = $dm;
+        $this->logger = $logger;
     }
 
     public function run()
     {
+        $this->logger->info('Process Starting');
         $edgar = new EDGAR();
         $sicCodes = $edgar->getSICCodes();
         foreach ($sicCodes as $item) {
@@ -35,5 +44,6 @@ class SICCollector
             $this->dm->persist($sic);
         }
         $this->dm->flush();
+        $this->logger->info(sprintf('Process End with %s sic collected', count($sicCodes)));
     }
 }

@@ -49,7 +49,7 @@ class SIC
     /**
      * @return mixed
      */
-    public function getId()
+    public function getId():string
     {
         return $this->id;
     }
@@ -57,7 +57,7 @@ class SIC
     /**
      * @return mixed
      */
-    public function getCode()
+    public function getCode():string
     {
         return $this->code;
     }
@@ -65,7 +65,7 @@ class SIC
     /**
      * @return mixed
      */
-    public function getOffice()
+    public function getOffice():string
     {
         return $this->office;
     }
@@ -73,7 +73,7 @@ class SIC
     /**
      * @return mixed
      */
-    public function getTitle()
+    public function getTitle():string
     {
         return $this->title;
     }
