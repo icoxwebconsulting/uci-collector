@@ -43,24 +43,6 @@ class Address
     private $phone;
 
     /**
-     * @param array $data
-     * @return Address
-     */
-    static public function createFromArray(array $data):Address
-    {
-        $street1 = array_key_exists('STREET1', $data) ? $data['STREET1'] : null;
-        $street2 = array_key_exists('STREET2', $data) ? $data['STREET2'] : null;
-        $city = array_key_exists('CITY', $data) ? $data['CITY'] : null;
-        $state = array_key_exists('STATE', $data) ? $data['STATE'] : null;
-        $zip = array_key_exists('ZIP', $data) ? $data['ZIP'] : null;
-        $phone = array_key_exists('PHONE', $data) ? $data['PHONE'] : null;
-
-        $address = new Address($street1, $street2, $city, $state, $zip, $phone);
-
-        return $address;
-    }
-
-    /**
      * Address constructor.
      *
      * @param string|null $street1
@@ -84,6 +66,24 @@ class Address
         $this->state = $state;
         $this->zip = $zip;
         $this->phone = $phone;
+    }
+
+    /**
+     * @param array $data
+     * @return Address
+     */
+    static public function createFromArray(array $data):Address
+    {
+        $street1 = array_key_exists('STREET1', $data) ? $data['STREET1'] : null;
+        $street2 = array_key_exists('STREET2', $data) ? $data['STREET2'] : null;
+        $city = array_key_exists('CITY', $data) ? $data['CITY'] : null;
+        $state = array_key_exists('STATE', $data) ? $data['STATE'] : null;
+        $zip = array_key_exists('ZIP', $data) ? $data['ZIP'] : null;
+        $phone = array_key_exists('PHONE', $data) ? $data['PHONE'] : null;
+
+        $address = new Address($street1, $street2, $city, $state, $zip, $phone);
+
+        return $address;
     }
 
     /**

@@ -63,6 +63,41 @@ class Company
     private $assignedSIC;
 
     /**
+     * Company constructor.
+     *
+     * @param string|null $cik
+     * @param string|null $conformedName
+     * @param SIC|null $assignedSIC
+     * @param string|null $irsNumber
+     * @param string|null $stateOfIncorporation
+     * @param string|null $fiscalEndYear
+     * @param Address $businessAddress
+     * @param Address $mailAddress
+     * @param Owner $owner
+     */
+    public function __construct(
+        string $cik,
+        string $conformedName,
+        SIC $assignedSIC,
+        string $irsNumber = null,
+        string $stateOfIncorporation = null,
+        string $fiscalEndYear = null,
+        Address $businessAddress,
+        Address $mailAddress,
+        Owner $owner
+    ) {
+        $this->cik = $cik;
+        $this->conformedName = $conformedName;
+        $this->assignedSIC = $assignedSIC;
+        $this->irsNumber = $irsNumber;
+        $this->stateOfIncorporation = $stateOfIncorporation;
+        $this->fiscalEndYear = $fiscalEndYear;
+        $this->businessAddress = $businessAddress;
+        $this->mailAddress = $mailAddress;
+        $this->owner = $owner;
+    }
+
+    /**
      * @param Company $company
      * @param array $data
      * @param array $availableSICs
@@ -179,37 +214,114 @@ class Company
     }
 
     /**
-     * Company constructor.
-     *
-     * @param string|null $cik
-     * @param string|null $conformedName
-     * @param SIC|null $assignedSIC
-     * @param string|null $irsNumber
-     * @param string|null $stateOfIncorporation
-     * @param string|null $fiscalEndYear
+     * @return mixed
+     */
+    public function getAssignedSIC()
+    {
+        return $this->assignedSIC;
+    }
+
+    /**
+     * @param SIC $assignedSIC
+     */
+    public function setAssignedSIC(SIC $assignedSIC)
+    {
+        $this->assignedSIC = $assignedSIC;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getConformedName()
+    {
+        return $this->conformedName;
+    }
+
+    /**
+     * @param string $conformedName
+     */
+    public function setConformedName(string $conformedName)
+    {
+        $this->conformedName = $conformedName;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getIRSNumber()
+    {
+        return $this->irsNumber;
+    }
+
+    /**
+     * @param string $irsNumber
+     */
+    public function setIRSNumber(string $irsNumber)
+    {
+        $this->irsNumber = $irsNumber;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFiscalEndYear()
+    {
+        return $this->fiscalEndYear;
+    }
+
+    /**
+     * @param string $fiscalEndYear
+     */
+    public function setFiscalEndYear(string $fiscalEndYear)
+    {
+        $this->fiscalEndYear = $fiscalEndYear;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBusinessAddress()
+    {
+        return $this->businessAddress;
+    }
+
+    /**
      * @param Address $businessAddress
+     */
+    public function setBusinessAddress(Address $businessAddress)
+    {
+        $this->businessAddress = $businessAddress;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailAddress()
+    {
+        return $this->mailAddress;
+    }
+
+    /**
      * @param Address $mailAddress
+     */
+    public function setMailAddress(Address $mailAddress)
+    {
+        $this->mailAddress = $mailAddress;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getOwner()
+    {
+        return $this->owner;
+    }
+
+    /**
      * @param Owner $owner
      */
-    public function __construct(
-        string $cik,
-        string $conformedName,
-        SIC $assignedSIC,
-        string $irsNumber = null,
-        string $stateOfIncorporation = null,
-        string $fiscalEndYear = null,
-        Address $businessAddress,
-        Address $mailAddress,
-        Owner $owner
-    ) {
-        $this->cik = $cik;
-        $this->conformedName = $conformedName;
-        $this->assignedSIC = $assignedSIC;
-        $this->irsNumber = $irsNumber;
-        $this->stateOfIncorporation = $stateOfIncorporation;
-        $this->fiscalEndYear = $fiscalEndYear;
-        $this->businessAddress = $businessAddress;
-        $this->mailAddress = $mailAddress;
+    public function setOwner(Owner $owner)
+    {
         $this->owner = $owner;
     }
 
@@ -232,81 +344,9 @@ class Company
     /**
      * @return mixed
      */
-    public function getConformedName()
-    {
-        return $this->conformedName;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getIRSNumber()
-    {
-        return $this->irsNumber;
-    }
-
-    /**
-     * @return mixed
-     */
     public function getStateOfIncorporation()
     {
         return $this->stateOfIncorporation;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getFiscalEndYear()
-    {
-        return $this->fiscalEndYear;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getBusinessAddress()
-    {
-        return $this->businessAddress;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getMailAddress()
-    {
-        return $this->mailAddress;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getOwner()
-    {
-        return $this->owner;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getAssignedSIC()
-    {
-        return $this->assignedSIC;
-    }
-
-    /**
-     * @param string $conformedName
-     */
-    public function setConformedName(string $conformedName)
-    {
-        $this->conformedName = $conformedName;
-    }
-
-    /**
-     * @param string $irsNumber
-     */
-    public function setIRSNumber(string $irsNumber)
-    {
-        $this->irsNumber = $irsNumber;
     }
 
     /**
@@ -315,45 +355,5 @@ class Company
     public function setStateOfIncorporation(string $stateOfIncorporation)
     {
         $this->stateOfIncorporation = $stateOfIncorporation;
-    }
-
-    /**
-     * @param string $fiscalEndYear
-     */
-    public function setFiscalEndYear(string $fiscalEndYear)
-    {
-        $this->fiscalEndYear = $fiscalEndYear;
-    }
-
-    /**
-     * @param Address $businessAddress
-     */
-    public function setBusinessAddress(Address $businessAddress)
-    {
-        $this->businessAddress = $businessAddress;
-    }
-
-    /**
-     * @param Address $mailAddress
-     */
-    public function setMailAddress(Address $mailAddress)
-    {
-        $this->mailAddress = $mailAddress;
-    }
-
-    /**
-     * @param Owner $owner
-     */
-    public function setOwner(Owner $owner)
-    {
-        $this->owner = $owner;
-    }
-
-    /**
-     * @param SIC $assignedSIC
-     */
-    public function setAssignedSIC(SIC $assignedSIC)
-    {
-        $this->assignedSIC = $assignedSIC;
     }
 }

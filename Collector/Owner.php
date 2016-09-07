@@ -28,6 +28,20 @@ class Owner
     private $mailAddress;
 
     /**
+     * Owner constructor.
+     *
+     * @param string|null $conformedName
+     * @param string|null $cik
+     * @param Address|null $mailAddress
+     */
+    public function __construct(string $conformedName = null, string $cik = null, Address $mailAddress = null)
+    {
+        $this->conformedName = $conformedName;
+        $this->cik = $cik;
+        $this->mailAddress = $mailAddress;
+    }
+
+    /**
      * @param $ownerData
      * @param $ownerAddressData
      * @return Owner
@@ -49,20 +63,6 @@ class Owner
         $owner = new Owner($conformedName, $cik, $address);
 
         return $owner;
-    }
-
-    /**
-     * Owner constructor.
-     *
-     * @param string|null $conformedName
-     * @param string|null $cik
-     * @param Address|null $mailAddress
-     */
-    public function __construct(string $conformedName = null, string $cik = null, Address $mailAddress = null)
-    {
-        $this->conformedName = $conformedName;
-        $this->cik = $cik;
-        $this->mailAddress = $mailAddress;
     }
 
     /**

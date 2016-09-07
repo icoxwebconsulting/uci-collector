@@ -34,31 +34,6 @@ class EDGAR
     private $guzzle;
 
     /**
-     * Init FTP
-     */
-    private function initFTP()
-    {
-        $connection = new AnonymousConnection(EDGAR::FTP_HOST, $port = 21, $timeout = 900, $passive = true);
-        $factory = new FTPFactory();
-        $this->ftp = $factory->build($connection);
-    }
-
-    /**
-     * Init Guzzle
-     */
-    private function initGuzzle()
-    {
-        $this->guzzle = new Client(
-            [
-                // Base URI is used with relative requests
-                'base_uri' => EDGAR::SEC_HOST,
-                // You can set any number of default request options.
-                'timeout' => 10,
-            ]
-        );
-    }
-
-    /**
      * Get dirs
      *
      * @param string $directory
@@ -86,26 +61,46 @@ class EDGAR
     }
 
     /**
-     * @param string $directory
+     * Init FTP
      */
-    private function ensureDirectory(string $directory)
+    private function initFTP()
     {
-        if (!is_dir($directory)) {
-            mkdir($directory);
-        }
+        $connection = new AnonymousConnection(EDGAR::FTP_HOST, $port = 21, $timeout = 900, $passive = true);
+        $factory = new FTPFactory();
+        $this->ftp = $factory->build($connection);
     }
 
     /**
-     * @param string $directory
+     * Get zip file content from edgar database
+     *
+     * @param string $fileName
+     * @param string $inDirectory
+     * @return array
+     * @throws \Exception
      */
-    private function cleanUpDirectory(string $directory)
+    public function getZipContent(string $fileName, string $inDirectory = '/'):array
     {
-        $this->ensureDirectory($directory);
-        $files = glob(sprintf('%s/*', $directory));
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                unlink($file);
+        if (!$this->ftp) {
+            $this->initFTP();
+        }
+
+        try {
+            $zipFileName = sprintf('%s.%s', $fileName, 'zip');
+            $this->get($zipFileName, $inDirectory);
+            $zip = new \ZipArchive();
+            $resource = $zip->open(sprintf('%s/%s', $this->downloadDirectory, $zipFileName));
+            if ($resource === true) {
+                $zip->extractTo($this->downloadDirectory);
+                $zip->close();
+            } else {
+                throw new \Exception('Error unziping');
             }
+            $content = $this->parseIDX($fileName);
+            $this->cleanUpDirectory($this->downloadDirectory);
+
+            return $content;
+        } catch (\Exception $exception) {
+            return array();
         }
     }
 
@@ -126,6 +121,45 @@ class EDGAR
         } else {
             throw new \Exception('File not found');
         }
+    }
+
+    /**
+     * @param string $directory
+     */
+    private function cleanUpDirectory(string $directory)
+    {
+        $this->ensureDirectory($directory);
+        $files = glob(sprintf('%s/*', $directory));
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+    }
+
+    /**
+     * @param string $directory
+     */
+    private function ensureDirectory(string $directory)
+    {
+        if (!is_dir($directory)) {
+            mkdir($directory);
+        }
+    }
+
+    /**
+     * @param string $fileName
+     * @return array
+     */
+    private function parseIDX(string $fileName):array
+    {
+        $fileContent = $this->readFile($fileName);
+        $content = array();
+        $content['meta'] = $this->parseIDXMeta($fileContent);
+        $fileContent = array_slice($fileContent, count($content['meta']));
+        $content['content'] = $this->parseIDXData($fileContent);
+
+        return $content;
     }
 
     /**
@@ -221,52 +255,53 @@ class EDGAR
     }
 
     /**
-     * @param string $fileName
-     * @return array
-     */
-    private function parseIDX(string $fileName):array
-    {
-        $fileContent = $this->readFile($fileName);
-        $content = array();
-        $content['meta'] = $this->parseIDXMeta($fileContent);
-        $fileContent = array_slice($fileContent, count($content['meta']));
-        $content['content'] = $this->parseIDXData($fileContent);
-
-        return $content;
-    }
-
-    /**
-     * Get zip file content from edgar database
+     * Get header of file from archive
      *
      * @param string $fileName
-     * @param string $inDirectory
+     * @param int $iteration
      * @return array
-     * @throws \Exception
      */
-    public function getZipContent(string $fileName, string $inDirectory = '/'):array
+    public function getHeader(string $fileName, int $iteration = 0):array
     {
-        if (!$this->ftp) {
-            $this->initFTP();
+        if (!$this->guzzle) {
+            $this->initGuzzle();
         }
 
         try {
-            $zipFileName = sprintf('%s.%s', $fileName, 'zip');
-            $this->get($zipFileName, $inDirectory);
-            $zip = new \ZipArchive();
-            $resource = $zip->open(sprintf('%s/%s', $this->downloadDirectory, $zipFileName));
-            if ($resource === true) {
-                $zip->extractTo($this->downloadDirectory);
-                $zip->close();
-            } else {
-                throw new \Exception('Error unziping');
-            }
-            $content = $this->parseIDX($fileName);
-            $this->cleanUpDirectory($this->downloadDirectory);
+            $url = $this->buildArchiveURL($fileName);
+            if (!empty($url)) {
+                $request = new Request('GET', $url);
+                $response = $this->guzzle->send($request);
 
-            return $content;
-        } catch (\Exception $exception) {
+                return $this->parseHeader($response->getBody()->getContents());
+            }
+
+            return array();
+        } catch (ServerException $exception) {
+        } catch (ConnectException $exception) {
+        }
+
+        // retry 5 times
+        if ($iteration < 5) {
+            return $this->getHeader($fileName, ++$iteration);
+        } else {
             return array();
         }
+    }
+
+    /**
+     * Init Guzzle
+     */
+    private function initGuzzle()
+    {
+        $this->guzzle = new Client(
+            [
+                // Base URI is used with relative requests
+                'base_uri' => EDGAR::SEC_HOST,
+                // You can set any number of default request options.
+                'timeout' => 10,
+            ]
+        );
     }
 
     /**
@@ -332,41 +367,6 @@ class EDGAR
         }
 
         return $tree[0];
-    }
-
-    /**
-     * Get header of file from archive
-     *
-     * @param string $fileName
-     * @param int $iteration
-     * @return array
-     */
-    public function getHeader(string $fileName, int $iteration = 0):array
-    {
-        if (!$this->guzzle) {
-            $this->initGuzzle();
-        }
-
-        try {
-            $url = $this->buildArchiveURL($fileName);
-            if (!empty($url)) {
-                $request = new Request('GET', $url);
-                $response = $this->guzzle->send($request);
-
-                return $this->parseHeader($response->getBody()->getContents());
-            }
-
-            return array();
-        } catch (ServerException $exception) {
-        } catch (ConnectException $exception) {
-        }
-
-        // retry 5 times
-        if ($iteration < 5) {
-            return $this->getHeader($fileName, ++$iteration);
-        } else {
-            return array();
-        }
     }
 
     /**
