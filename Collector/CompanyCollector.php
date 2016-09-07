@@ -12,6 +12,8 @@ use Monolog\Logger;
  */
 class CompanyCollector
 {
+    const BATCH = 10;
+
     /**
      * @var DocumentManager
      */
@@ -49,11 +51,13 @@ class CompanyCollector
             array()
         );
 
+        // memory storage
+        $companies = array();
+
         $edgar = new EDGAR();
         $this->logger->info('Collecting full index');
         $years = $edgar->listDirs('/edgar/full-index');
         $this->logger->info(sprintf('Full index has %s years', count($years)));
-        $i = 0;
         foreach ($years as $year) {
             $this->logger->info(sprintf('Collecting Quarters for %s year', $year));
             $quarters = $edgar->listDirs($year);
@@ -61,53 +65,68 @@ class CompanyCollector
             foreach ($quarters as $quarter) {
                 $this->logger->info(sprintf('Collecting company zip for quarter %s', $quarter));
                 $data = $edgar->getZipContent('company', $quarter);
-                $items = $data['content'];
-                $this->logger->info(sprintf('Quarter %s has %s company files', $quarter, count($items)));
-                foreach ($items as $item) {
-                    $fileName = $item['fileName'];
-                    $this->logger->info(sprintf('Collecting header file for %s', $fileName));
-                    $data = $edgar->getHeader($fileName);
-                    $company = Company::createFromArray($data, $availableSICS);
-                    if ($company) {
-                        $this->logger->info(
-                            sprintf(
-                                'Header file for %s contains valid company %s data',
-                                $fileName,
-                                $company->getConformedName()
-                            )
-                        );
-
-                        $this->logger->info(
-                            sprintf('Find if company %s already exist in UCI db', $company->getConformedName())
-                        );
-                        $existingCompany = $this->dm->getRepository('Collector\Company')->findOneBy(
-                            array('cik' => $company->getCIK())
-                        );
-
-                        if ($existingCompany) {
-                            $this->logger->info(
+                if (!empty($data)) {
+                    $items = $data['content'];
+                    $this->logger->info(sprintf('Quarter %s has %s company files', $quarter, count($items)));
+                    foreach ($items as $item) {
+                        $fileName = $item['fileName'];
+                        $this->logger->debug(sprintf('Collecting header file for %s', $fileName));
+                        $data = $edgar->getHeader($fileName);
+                        $company = Company::createFromArray($data, $availableSICS);
+                        if ($company) {
+                            $this->logger->debug(
                                 sprintf(
-                                    'Company %s already exist in UCI db with id %s',
-                                    $company->getConformedName(),
-                                    $existingCompany->getId()
+                                    'Header file for %s contains valid company %s data',
+                                    $fileName,
+                                    $company->getConformedName()
                                 )
                             );
-                            Company::updateFromArray($existingCompany, $data, $availableSICS);
+
+                            $this->logger->debug(
+                                sprintf(
+                                    'Find if company %s already exist in UCI db or loaded',
+                                    $company->getConformedName()
+                                )
+                            );
+
+                            // look on db
+                            $existingCompany = $this->dm->getRepository('Collector\Company')->findOneBy(
+                                array('cik' => $company->getCIK())
+                            );
+
+                            // look on loaded
+                            if (!$existingCompany && array_key_exists($company->getCIK(), $companies)) {
+                                $existingCompany = $companies[$company->getCIK()];
+                            }
+
+                            if ($existingCompany) {
+                                $this->logger->debug(
+                                    sprintf(
+                                        'Company %s already exist in UCI db with id %s',
+                                        $company->getConformedName(),
+                                        $existingCompany->getId()
+                                    )
+                                );
+                                Company::updateFromArray($existingCompany, $data, $availableSICS);
+                            } else {
+                                $this->dm->persist($company);
+                                $companies[$company->getCIK()] = $company;
+                            }
                         } else {
-                            $this->dm->persist($company);
+                            $this->logger->debug(
+                                sprintf('Header file for %s does not contains a valid company data', $fileName)
+                            );
                         }
-                    } else {
-                        $this->logger->info(
-                            sprintf('Header file for %s does not contains a valid company data', $fileName)
-                        );
+
+                        if (count($companies) == self::BATCH) {
+                            $this->logger->info(
+                                sprintf('Saving batch of %s companies for quarter %s', self::BATCH, $quarter)
+                            );
+                            $this->dm->flush();
+                            $companies = array();
+                        }
                     }
                 }
-                $this->logger->info(sprintf('Saving companies for quarter %s', $quarter));
-                $this->dm->flush();
-            }
-            $i++;
-            if ($i > 3) {
-                die();
             }
         }
         $this->logger->info('Process End');

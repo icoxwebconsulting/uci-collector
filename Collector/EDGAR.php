@@ -4,6 +4,7 @@ namespace Collector;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Psr7\Request;
 use Symfony\Component\DomCrawler\Crawler;
 use Touki\FTP\Connection\AnonymousConnection;
@@ -276,9 +277,14 @@ class EDGAR
     {
         $fileName = substr($fileName, 0, strpos($fileName, '.txt'));
         $sections = explode('/', $fileName);
-        $path = sprintf('%s/%s/%s', $sections[2], implode('', explode('-', $sections[3])), $sections[3]);
 
-        return sprintf('%s/Archives/edgar/data/%s.hdr.sgml', EDGAR::SEC_HOST, $path);
+        if (count($sections) === 4) {
+            $path = sprintf('%s/%s/%s', $sections[2], implode('', explode('-', $sections[3])), $sections[3]);
+
+            return sprintf('%s/Archives/edgar/data/%s.hdr.sgml', EDGAR::SEC_HOST, $path);
+        }
+
+        return '';
     }
 
     /**
@@ -343,17 +349,23 @@ class EDGAR
 
         try {
             $url = $this->buildArchiveURL($fileName);
-            $request = new Request('GET', $url);
-            $response = $this->guzzle->send($request);
+            if (!empty($url)) {
+                $request = new Request('GET', $url);
+                $response = $this->guzzle->send($request);
 
-            return $this->parseHeader($response->getBody()->getContents());
-        } catch (ConnectException $exception) {
-            // retry 5 times
-            if ($iteration < 5) {
-                return $this->getHeader($fileName, ++$iteration);
-            } else {
-                return array();
+                return $this->parseHeader($response->getBody()->getContents());
             }
+
+            return array();
+        } catch (ServerException $exception) {
+        } catch (ConnectException $exception) {
+        }
+
+        // retry 5 times
+        if ($iteration < 5) {
+            return $this->getHeader($fileName, ++$iteration);
+        } else {
+            return array();
         }
     }
 

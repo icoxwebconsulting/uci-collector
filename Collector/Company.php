@@ -72,11 +72,26 @@ class Company
         $newCompany = self::createFromArray($data, $availableSICs);
         $company->setAssignedSIC($newCompany->getAssignedSIC());
         $company->setConformedName($newCompany->getConformedName());
-        $company->setIRSNumber($newCompany->getIRSNumber());
-        $company->setFiscalEndYear($newCompany->getFiscalEndYear());
-        $company->setBusinessAddress($newCompany->getBusinessAddress());
-        $company->setMailAddress($newCompany->getMailAddress());
-        $company->setOwner($newCompany->getOwner());
+
+        if ($newCompany->getIRSNumber()) {
+            $company->setIRSNumber($newCompany->getIRSNumber());
+        }
+
+        if ($newCompany->getFiscalEndYear()) {
+            $company->setFiscalEndYear($newCompany->getFiscalEndYear());
+        }
+
+        if ($newCompany->getBusinessAddress()) {
+            $company->setBusinessAddress($newCompany->getBusinessAddress());
+        }
+
+        if ($newCompany->getMailAddress()) {
+            $company->setMailAddress($newCompany->getMailAddress());
+        }
+
+        if ($newCompany->getOwner()) {
+            $company->setOwner($newCompany->getOwner());
+        }
     }
 
     /**
@@ -134,6 +149,7 @@ class Company
                 (array_key_exists('CIK', $companyData) && $companyData['CIK']) &&
                 (array_key_exists('ASSIGNED-SIC', $companyData) &&
                     $companyData['ASSIGNED-SIC'] &&
+                    array_key_exists($companyData['ASSIGNED-SIC'], $availableSICs) &&
                     $availableSICs[$companyData['ASSIGNED-SIC']]) &&
                 (!empty($businessAddressData) || !empty($mailAddressData))
             ) {

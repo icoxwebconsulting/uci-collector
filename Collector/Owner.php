@@ -35,7 +35,7 @@ class Owner
     static public function createFromArray($ownerData, $ownerAddressData):Owner
     {
         $street1 = array_key_exists('STREET1', $ownerAddressData) ? $ownerAddressData['STREET1'] : null;
-        $street2 = array_key_exists('STREET2', $ownerAddressData) ? $ownerAddressData['STREET1'] : null;
+        $street2 = array_key_exists('STREET2', $ownerAddressData) ? $ownerAddressData['STREET2'] : null;
         $city = array_key_exists('CITY', $ownerAddressData) ? $ownerAddressData['CITY'] : null;
         $state = array_key_exists('STATE', $ownerAddressData) ? $ownerAddressData['STATE'] : null;
         $zip = array_key_exists('ZIP', $ownerAddressData) ? $ownerAddressData['ZIP'] : null;
