@@ -66,7 +66,7 @@ class Owner
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getConformedName()
     {
@@ -74,7 +74,7 @@ class Owner
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getCIK()
     {
@@ -82,7 +82,7 @@ class Owner
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getMailAddress()
     {

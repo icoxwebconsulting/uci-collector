@@ -87,7 +87,7 @@ class Address
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getStreet1()
     {
@@ -95,7 +95,7 @@ class Address
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getStreet2()
     {
@@ -103,7 +103,7 @@ class Address
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getCity()
     {
@@ -111,7 +111,7 @@ class Address
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getState()
     {
@@ -119,7 +119,7 @@ class Address
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getZip()
     {
@@ -127,10 +127,18 @@ class Address
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getPhone()
     {
         return $this->phone;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFullAddress():string
+    {
+        return sprintf('%s %s, %s, %s', $this->street1, $this->street2, $this->city, $this->state);
     }
 }

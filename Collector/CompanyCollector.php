@@ -25,6 +25,11 @@ class CompanyCollector
     private $logger;
 
     /**
+     * @var GMaps
+     */
+    private $gmaps;
+
+    /**
      * CompanyCollector constructor.
      *
      * @param DocumentManager $dm
@@ -34,6 +39,7 @@ class CompanyCollector
     {
         $this->dm = $dm;
         $this->logger = $logger;
+        $this->gmaps = new GMaps();
     }
 
     public function run()
@@ -82,35 +88,58 @@ class CompanyCollector
                                 )
                             );
 
+                            $address = $company->getBusinessAddress()->getFullAddress();
+
                             $this->logger->debug(
                                 sprintf(
-                                    'Find if company %s already exist in UCI db or loaded',
-                                    $company->getConformedName()
+                                    'Retrieve geo location for address %s',
+                                    $address
                                 )
                             );
 
-                            // look on db
-                            $existingCompany = $this->dm->getRepository('Collector\Company')->findOneBy(
-                                array('cik' => $company->getCIK())
-                            );
+                            $geoLocation = $this->gmaps->getLocation($address);
+                            if (array_key_exists('latitude', $geoLocation) &&
+                                $geoLocation['latitude'] &&
+                                array_key_exists('longitude', $geoLocation) &&
+                                $geoLocation['longitude']
+                            ) {
+                                $geoLocation = new GeoLocation($geoLocation['latitude'], $geoLocation['longitude']);
+                                $company->setGeoLocation($geoLocation);
 
-                            // look on loaded
-                            if (!$existingCompany && array_key_exists($company->getCIK(), $companies)) {
-                                $existingCompany = $companies[$company->getCIK()];
-                            }
-
-                            if ($existingCompany) {
                                 $this->logger->debug(
                                     sprintf(
-                                        'Company %s already exist in UCI db with id %s',
-                                        $company->getConformedName(),
-                                        $existingCompany->getId()
+                                        'Find if company %s already exist in UCI db or loaded',
+                                        $company->getConformedName()
                                     )
                                 );
-                                Company::updateFromArray($existingCompany, $data, $availableSICS);
+
+                                // look on db
+                                $existingCompany = $this->dm->getRepository('Collector\Company')->findOneBy(
+                                    array('cik' => $company->getCIK())
+                                );
+
+                                // look on loaded
+                                if (!$existingCompany && array_key_exists($company->getCIK(), $companies)) {
+                                    $existingCompany = $companies[$company->getCIK()];
+                                }
+
+                                if ($existingCompany) {
+                                    $this->logger->debug(
+                                        sprintf(
+                                            'Company %s already exist in UCI db with id %s',
+                                            $company->getConformedName(),
+                                            $existingCompany->getId()
+                                        )
+                                    );
+                                    Company::updateFromArray($existingCompany, $data, $availableSICS);
+                                } else {
+                                    $this->dm->persist($company);
+                                    $companies[$company->getCIK()] = $company;
+                                }
                             } else {
-                                $this->dm->persist($company);
-                                $companies[$company->getCIK()] = $company;
+                                $this->logger->debug(
+                                    sprintf('Company address was not converted to geo location', $fileName)
+                                );
                             }
                         } else {
                             $this->logger->debug(

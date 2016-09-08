@@ -58,6 +58,11 @@ class Company
     private $owner;
 
     /**
+     * @ODM\EmbedOne(targetDocument="GeoLocation")
+     */
+    private $geoLocation;
+
+    /**
      * @ODM\ReferenceOne(targetDocument="SIC")
      */
     private $assignedSIC;
@@ -214,7 +219,7 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getAssignedSIC()
     {
@@ -230,7 +235,7 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getConformedName()
     {
@@ -246,7 +251,7 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getIRSNumber()
     {
@@ -262,7 +267,7 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getFiscalEndYear()
     {
@@ -278,9 +283,9 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return Address
      */
-    public function getBusinessAddress()
+    public function getBusinessAddress():Address
     {
         return $this->businessAddress;
     }
@@ -294,9 +299,9 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return Address
      */
-    public function getMailAddress()
+    public function getMailAddress():Address
     {
         return $this->mailAddress;
     }
@@ -310,9 +315,9 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return Owner
      */
-    public function getOwner()
+    public function getOwner():Owner
     {
         return $this->owner;
     }
@@ -326,7 +331,7 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getId()
     {
@@ -334,7 +339,7 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getCIK()
     {
@@ -342,7 +347,7 @@ class Company
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getStateOfIncorporation()
     {
@@ -355,5 +360,21 @@ class Company
     public function setStateOfIncorporation(string $stateOfIncorporation)
     {
         $this->stateOfIncorporation = $stateOfIncorporation;
+    }
+
+    /**
+     * @return GeoLocation
+     */
+    public function getGeoLocation():GeoLocation
+    {
+        return $this->geoLocation;
+    }
+
+    /**
+     * @param string $geoLocation
+     */
+    public function setGeoLocation($geoLocation)
+    {
+        $this->geoLocation = $geoLocation;
     }
 }

@@ -65,7 +65,7 @@ class EDGAR
      */
     private function initFTP()
     {
-        $connection = new AnonymousConnection(EDGAR::FTP_HOST, $port = 21, $timeout = 900, $passive = true);
+        $connection = new AnonymousConnection(self::FTP_HOST, $port = 21, $timeout = 900, $passive = true);
         $factory = new FTPFactory();
         $this->ftp = $factory->build($connection);
     }
@@ -297,7 +297,7 @@ class EDGAR
         $this->guzzle = new Client(
             [
                 // Base URI is used with relative requests
-                'base_uri' => EDGAR::SEC_HOST,
+                'base_uri' => self::SEC_HOST,
                 // You can set any number of default request options.
                 'timeout' => 10,
             ]
@@ -316,7 +316,7 @@ class EDGAR
         if (count($sections) === 4) {
             $path = sprintf('%s/%s/%s', $sections[2], implode('', explode('-', $sections[3])), $sections[3]);
 
-            return sprintf('%s/Archives/edgar/data/%s.hdr.sgml', EDGAR::SEC_HOST, $path);
+            return sprintf('%s/Archives/edgar/data/%s.hdr.sgml', self::SEC_HOST, $path);
         }
 
         return '';
@@ -330,7 +330,7 @@ class EDGAR
     {
         // split info
         $matches = array();
-        preg_match_all(EDGAR::HEADER_REGEX, $raw, $matches);
+        preg_match_all(self::HEADER_REGEX, $raw, $matches);
         $tags = $matches[1];
         $content = $matches[2];
         // join them

@@ -47,7 +47,7 @@ class SIC
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getId():string
     {
@@ -55,7 +55,7 @@ class SIC
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getCode():string
     {
@@ -63,7 +63,7 @@ class SIC
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getOffice():string
     {
@@ -71,7 +71,7 @@ class SIC
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getTitle():string
     {
