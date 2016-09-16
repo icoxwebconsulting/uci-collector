@@ -8,7 +8,7 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
  * Class CollectorCommand
  *
  * @package Collector
- * @ODM\Document(db="collector-command")
+ * @ODM\Document(db="uci")
  */
 class CollectorCommand
 {
@@ -43,9 +43,19 @@ class CollectorCommand
     private $lastQuarter;
 
     /**
-     * @ODM\Field(type="string")
+     * @ODM\Field(type="int")
      */
-    private $lastFile;
+    private $lastCount;
+
+    /**
+     * CollectorCommand constructor.
+     * @param string $name
+     */
+    public function __construct(string $name)
+    {
+        $this->name = $name;
+        $this->running = false;
+    }
 
     /**
      * @return string
@@ -74,8 +84,12 @@ class CollectorCommand
     /**
      * @return bool
      */
-    public function getRunning():bool
+    public function isRunning():bool
     {
+        if ($this->running === null) {
+            $this->running = false;
+        }
+
         return $this->running;
     }
 
@@ -108,6 +122,10 @@ class CollectorCommand
      */
     public function getLastYear():string
     {
+        if ($this->lastYear === null) {
+            $this->lastYear = '1000';
+        }
+
         return $this->lastYear;
     }
 
@@ -124,6 +142,10 @@ class CollectorCommand
      */
     public function getLastQuarter():string
     {
+        if ($this->lastQuarter === null) {
+            $this->lastQuarter = 'QT0';
+        }
+
         return $this->lastQuarter;
     }
 
@@ -136,18 +158,22 @@ class CollectorCommand
     }
 
     /**
-     * @return string
+     * @return int
      */
-    public function getLastFile():string
+    public function getLastCount():int
     {
-        return $this->lastFile;
+        if ($this->lastCount === null) {
+            $this->lastCount = 0;
+        }
+
+        return $this->lastCount;
     }
 
     /**
-     * @param string $lastFile
+     * @param int $lastCount
      */
-    public function setLastFile(string $lastFile)
+    public function setLastCount(int $lastCount)
     {
-        $this->lastFile = $lastFile;
+        $this->lastCount = $lastCount;
     }
 }

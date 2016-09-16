@@ -106,8 +106,9 @@ class Company
      * @param Company $company
      * @param array $data
      * @param array $availableSICs
+     * @return Company
      */
-    static public function updateFromArray(Company $company, array $data, array $availableSICs)
+    static public function updateFromArray(Company $company, array $data, array $availableSICs):Company
     {
         $newCompany = self::createFromArray($data, $availableSICs);
         $company->setAssignedSIC($newCompany->getAssignedSIC());
@@ -132,6 +133,8 @@ class Company
         if ($newCompany->getOwner()) {
             $company->setOwner($newCompany->getOwner());
         }
+
+        return $company;
     }
 
     /**
@@ -219,9 +222,9 @@ class Company
     }
 
     /**
-     * @return string
+     * @return SIC
      */
-    public function getAssignedSIC()
+    public function getAssignedSIC():SIC
     {
         return $this->assignedSIC;
     }
