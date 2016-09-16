@@ -1,6 +1,6 @@
 <?php
 
-namespace Collector;
+namespace Collector\Entity;
 
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 

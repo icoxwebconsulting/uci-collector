@@ -18,7 +18,7 @@ $config->setProxyDir('./cache/doctrine');
 $config->setProxyNamespace('Proxies');
 $config->setHydratorDir('./cache/doctrine');
 $config->setHydratorNamespace('Hydrators');
-$config->setMetadataDriverImpl(AnnotationDriver::create('./Collector'));
+$config->setMetadataDriverImpl(AnnotationDriver::create('./Collector/Entity'));
 
 $connection = new Connection('mongo');
 $dm = DocumentManager::create($connection, $config);

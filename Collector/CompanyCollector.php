@@ -42,9 +42,8 @@ class CompanyCollector
         $this->gmaps = new GMaps();
     }
 
-    public function run()
+    private function getSICs():array
     {
-        $this->logger->info('Starting Process');
         $this->logger->info('Collecting SICs from DB');
         $sics = $this->dm->getRepository('Collector\SIC')->findAll();
         $availableSICS = array_reduce(
@@ -56,6 +55,17 @@ class CompanyCollector
             },
             array()
         );
+
+        return $availableSICS;
+    }
+
+    /**
+     * Run
+     */
+    public function run()
+    {
+        $this->logger->info('Starting Process');
+        $availableSICS = $this->getSICs();
 
         // memory storage
         $companies = array();
