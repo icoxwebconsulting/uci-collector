@@ -2,6 +2,7 @@
 
 namespace Collector;
 
+use Collector\Entity\SIC;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Monolog\Logger;
 
